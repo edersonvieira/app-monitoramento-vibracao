@@ -20,8 +20,9 @@ export default function ConfigBar({ theme }) {
             console.log("Invalid MQTT server or port.");
             return;
         }
+        const clientId = `clientid_${Math.random().toString(16).substr(2, 8)}`;
 
-        const client = new Paho.Client(mqttServer, Number(mqttPort), 'clientId');
+        const client = new Paho.Client(mqttServer, Number(mqttPort), clientId);
 
         client.connect({
             userName: mqttUsername,
