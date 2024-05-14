@@ -27,10 +27,8 @@ export default function ConfigBar({ theme }) {
             userName: mqttUsername,
             password: mqttPassword,
             onSuccess: () => {
-                console.log('Connection established');
-                client.subscribe('my/example/topic');
-                const message = new Paho.Message('Hello');
-                message.destinationName = 'my/example/topic';
+                cosnole.log("conectado")
+                const message = new Paho.Message('Teste');
                 client.send(message);
             },
             onFailure: (error) => {
