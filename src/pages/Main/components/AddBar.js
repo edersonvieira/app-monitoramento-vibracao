@@ -14,9 +14,9 @@ export default function AddBar ({ theme, toggleAddBar }) {
             await AsyncStorage.setItem('receber', receber)
             await AsyncStorage.setItem('usuario', usuario)
             await AsyncStorage.setItem('senha', senha)
-            console.log('Data added successfully!')
+            console.log('equipamento adicionado com sucesso!')
         } catch (error) {
-            console.log('Error adding data:', error)
+            console.log('Error ', error)
         }
     }
 
