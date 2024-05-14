@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, Image, Modal, TextInput, Alert } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import MqttClient from 'react-native-mqtt';
-import uuid from 'react-native-uuid';
+import * as Paho from 'paho-mqtt';
 
 export default function ConfigBar({ theme }) {
     const [modalVisibleLimpar, setModalVisibleLimpar] = useState(false);
@@ -13,6 +12,56 @@ export default function ConfigBar({ theme }) {
     const [mqttUsername, setMqttUsername] = useState('');
     const [mqttPassword, setMqttPassword] = useState('');
     const [temComunicacao, setTemComunicacao] = useState(false);
+    const [client, setClient] = useState(null);
+
+    const connectToMQTT = () => {
+        getMqttSettings();
+        if (!mqttServer || !mqttPort) {
+            console.log("Invalid MQTT server or port.");
+            return;
+        }
+
+        const client = new Paho.Client(mqttServer, Number(mqttPort), 'clientId');
+
+        client.connect({
+            userName: mqttUsername,
+            password: mqttPassword,
+            onSuccess: () => {
+                console.log('Connection established');
+                client.subscribe('my/example/topic');
+                const message = new Paho.Message('Hello');
+                message.destinationName = 'my/example/topic';
+                client.send(message);
+            },
+            onFailure: (error) => {
+                console.error(error);
+            },
+        });
+
+        client.onConnectionLost = (responseObject) => {
+            if (responseObject.errorCode !== 0) {
+                console.error('onConnectionLost:' + responseObject.errorMessage);
+            }
+        };
+
+        client.onMessageArrived = (message) => {
+            console.log('onMessageArrived:' + message.payloadString);
+        };
+
+        setClient(client);
+    };
+
+    const disconnectFromMQTT = () => {
+        if (client) {
+            client.disconnect();
+            setClient(null);
+        }
+    };
+
+    const testarComunicacao = () => {
+        connectToMQTT();
+        console.log("Testing MQTT Connection with", mqttServer, "on port", mqttPort);
+    };
 
     const getMqttSettings = async () => {
         try {
@@ -50,46 +99,6 @@ export default function ConfigBar({ theme }) {
             Alert.alert("Erro", "Erro ao salvar configurações MQTT.");
         }
     }
-
-    const testarComunicacao = async () => {
-        await getMqttSettings();
-        console.log("Testing MQTT Connection with", mqttServer, "on port", mqttPort);
-        if (!mqttServer || !mqttPort) {
-            console.log("Invalid MQTT server or port.");
-            return;
-        }
-    
-        try {
-            init({
-                size: 10000,
-                storageBackend: AsyncStorage,
-                defaultExpires: 1000 * 3600 * 24,
-                enableCache: true,
-                reconnect: true,
-                sync: {},
-            });
-    
-            const client = await createClient({
-                uri: `mqtt://${mqttServer}:${mqttPort}`,
-                clientId: `clientId-${Math.random().toString(16).slice(2)}`,
-                auth: {
-                    username: mqttUsername,
-                    password: mqttPassword,
-                },
-            });
-    
-            client.on('connect', () => {
-                console.log("Connected to MQTT server.");
-            });
-    
-            client.on('error', error => {
-                console.error("Connection failed:", error.message);
-            });
-    
-        } catch (error) {
-            console.error("MQTT Connection error:", error);
-        }
-    };
     
     const handleLimpar = async () => {
         try {

@@ -1,4 +1,5 @@
 package com.appmonitoramentovibracao
+import com.appmonitoramentovibracao.RCTMqttPackage
 
 import android.app.Application
 import android.content.res.Configuration
@@ -21,8 +22,7 @@ class MainApplication : Application(), ReactApplication {
         this,
         object : DefaultReactNativeHost(this) {
           override fun getPackages(): List<ReactPackage> {
-            // Packages that cannot be autolinked yet can be added manually here, for example:
-            // packages.add(new MyReactNativePackage());
+            packages.add(RCTMqttPackage())
             return PackageList(this).packages
           }
 

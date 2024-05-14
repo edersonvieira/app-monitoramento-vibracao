@@ -18,6 +18,7 @@
     "expo": "~51.0.2",
     "expo-status-bar": "~1.12.1",
     "loadsh": "^0.0.4",
+    "mqtt": "^5.6.0",
     "paho-client": "^1.0.1",
     "paho-mqtt": "^1.1.0",
     "react": "18.2.0",
