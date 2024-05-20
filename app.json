@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "app-monitoramento-vibracao",
-    "slug": "app-monitoramento-vibracao",
-    "version": "1.0.0",
     "extra": {
       "eas": {
-        "projectId": "2cb9876d-9a04-48dc-9f28-5b0273016095"
+        "projectId": "61b3c93d-9a51-4b52-b361-0660ae865399"
       }
+    },
+    "android": {
+      "package": "com.dersooooo.appmonitoramentovibracao"
     }
   }
 }
