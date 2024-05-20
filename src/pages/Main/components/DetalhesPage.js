@@ -1,12 +1,46 @@
-import React from "react";
-import { View, Text, TouchableOpacity, SafeAreaView, Image, ScrollView } from "react-native";
-import { LineChart, Grid, PieChart, BarChart, XAxis } from "react-native-svg-charts";
+import React, { useState, useEffect } from 'react';
+import { ScrollView, View, Text, StyleSheet, TouchableOpacity, Image, SafeAreaView } from 'react-native';
+import { Table, Row, Rows } from 'react-native-table-component';
+import AWS from '../../../utils/aws';
+
+const docClient = new AWS.DynamoDB.DocumentClient();
 
 export default function DetalhesPage({ item, onClose, theme }) {
-    const dataLine = [item.x, item.y, item.z];
-    const dataPie = [{key: "X", value: item.x, svg: {fill: 'red'}}, {key: "Y", value: item.y, svg: {fill: 'green'}}, {key: "Z", value: item.z, svg: {fill: 'blue'}}];
-    const dataBar = [item.x, item.y, item.z];
+    const [tableData, setTableData] = useState([]);
 
+    useEffect(() => {
+        if (!item || !item.id_dispositivo) {
+            console.log("Item ou ID do dispositivo não definido.");
+            return;
+        }
+
+        const fetchData = async () => {
+            const params = {
+                TableName: 'reporte'
+            };
+
+            docClient.scan(params, function(err, data) {
+                if (err) {
+                    console.log("Erro", err);
+                } else {
+                    console.log("Dados recebidos:", data);
+                    const filteredData = data.Items.filter(d => d.id_dispositivo === item.id_dispositivo);
+                    setTableData(filteredData.map(d => [d.x, d.y, d.z, formatTimestamp(d.timestamp)]));
+                }
+            });
+        };
+
+        fetchData();
+        const interval = setInterval(fetchData, 60000);
+        return () => clearInterval(interval);
+    }, [item]);
+
+    const formatTimestamp = (timestamp) => {
+        const date = new Date(timestamp);
+        return `${date.toLocaleDateString('pt-BR')} ${date.toLocaleTimeString('pt-BR')}`;
+    };
+
+    const tableHead = ['X', 'Y', 'Z', 'Data/Hora'];
 
     return (
         <ScrollView style={theme.scrollView}>
@@ -20,9 +54,7 @@ export default function DetalhesPage({ item, onClose, theme }) {
                 <View style={theme.detalhesContent}>
                     <View style={theme.detalhesTitleContainer}>
                         <Text style={theme.detalhesTitle}>ID: </Text>
-                        <Text style={theme.detalhesText}>{item.id}</Text>
-                        <Text style={theme.detalhesTitle}>Nome: </Text>
-                        <Text style={theme.detalhesText}>{item.equipamento}</Text>
+                        <Text style={theme.detalhesText}>{item.id_dispositivo}</Text>
                     </View>
                     <View style={theme.detalhesDataContainer}>
                         <View style={theme.detalhesData}>
@@ -38,66 +70,19 @@ export default function DetalhesPage({ item, onClose, theme }) {
                             <Text style={theme.detalhesDataText}>{item.z}</Text>
                         </View>
                     </View>
-                    <View style={theme.detalhesStatusContainer}>
-                        <Text style={{ ...theme.detalhesStatus, color: item.status ? 'green' : 'red' }}>
-                            {item.status ? 'BOM' : 'RUIM'}
-                        </Text>
-                    </View>
-                    <View style={theme.detalhesButtomExportar}>
-                        <TouchableOpacity style={theme.detalhesButtomExportarCSV}>
-                            <Text style={theme.detalhesButtomExportarCSVText}>Exportar CSV</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity style={theme.detalhesButtomExportarPDF}>
-                            <Text style={theme.detalhesButtomExportarPDFText}>Exportar PDF</Text>
-                        </TouchableOpacity>
-                    </View>
-                    <View>
-                        <LineChart
-                            style={{flex:1, height: 200}}
-                            data={dataLine}
-                            svg={{ stroke: 'rgb(134, 65, 244)' }}
-                            contentInset={{ top: 20, bottom: 20 }}
-                        >
-                            <Grid />
-                        </LineChart>
-                    </View>
-                    <View>
-                        <PieChart
-                            style={{ height: 200 }}
-                            data={dataPie}
-                        />
-                    </View>
-                    <View>
-                        <BarChart
-                            style={{ height: 200 }}
-                            data={dataBar}
-                            svg={{ fill: 'rgb(134, 65, 244)' }}
-                            contentInset={{ top: 30, bottom: 30 }}
-                        >
-                            <Grid />
-                        </BarChart>
-                    </View>
-                    <View>
-                        <View>
-                            <Text style={theme.detalhesTableTitle}>Tabela de Reportes</Text>
-                            <View style={theme.detalhesTableHeader}>
-                                <Text style={theme.detalhesTableHeaderText}>X</Text>
-                                <Text style={theme.detalhesTableHeaderText}>Y</Text>
-                                <Text style={theme.detalhesTableHeaderText}>Z</Text>
-                                <Text style={theme.detalhesTableHeaderText}>Hora</Text>
-                            </View>
-                            {item.reportes.map((reporte, index) => (
-                                <View key={index} style={theme.detalhesTableRow}>
-                                    <Text style={theme.detalhesTableText}>{reporte.x}</Text>
-                                    <Text style={theme.detalhesTableText}>{reporte.y}</Text>
-                                    <Text style={theme.detalhesTableText}>{reporte.z}</Text>
-                                    <Text style={theme.detalhesTableText}>{reporte.hora}</Text>
-                                </View>
-                            ))}
-                        </View>
+                    <View style={{margin: 5}}>
+                        <Table borderStyle={{borderWidth: 1, borderColor: '#ccc'}}>
+                            <Row data={tableHead} style={styles.head} textStyle={styles.text}/>
+                            <Rows data={tableData} textStyle={styles.text}/>
+                        </Table>
                     </View>
                 </View>
             </SafeAreaView>
         </ScrollView>
     );
 }
+
+const styles = StyleSheet.create({
+    head: { height: 40, backgroundColor: '#f1f1f1', alignSelf: "center" },
+    text: { margin: 2,  alignSelf: "center" }
+});

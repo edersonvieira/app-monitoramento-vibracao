@@ -1,21 +1,21 @@
-import { SafeAreaView, Modal, TouchableWithoutFeedback, View } from "react-native";
+import { SafeAreaView, Modal, View } from "react-native";
 import HeadBar from "./components/HeadBar.js";
 import SwipeList from "./components/SwipeList.js";
-import ConfigBar from "./components/ConfigBar.js";
 import { StatusBar } from "expo-status-bar";
-import { useState } from "react";
-import AddBar from "./components/AddBar.js";
-import {lightTheme} from "./themes.js";
+import { useState, useEffect } from "react";
+import { lightTheme } from "./themes.js";
 import DetalhesPage from "./components/DetalhesPage.js";
-import * as Animatable from 'react-native-animatable';
+import AWS from "../../utils/aws.js";
+
+const docClient = new AWS.DynamoDB.DocumentClient();
 
 export function Main() {
   const [configBarOpen, setConfigBarOpen] = useState(false);
-  const [addBarOpen, setAddBarOpen] = useState(false);
   const [isModalVisibleAdd, setIsModalVisibleAdd] = useState(false);
   const [isModalVisibleConfig, setIsModalVisibleConfig] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [isDetalhesVisible, setIsDetalhesVisible] = useState(false);
+  const [data, setData] = useState([]);
 
   const toggleConfigBar = () => {
     setConfigBarOpen((prevState) => !prevState);
@@ -23,36 +23,54 @@ export function Main() {
   };
   
   const toggleAddBar = () => {
-    setAddBarOpen((prevState) => !prevState);
-    setIsModalVisibleAdd(!isModalVisibleAdd);
+    setIsModalVisibleAdd((prevState) => !prevState);
   };
 
-  const handleCloseModalConfig = () => {
-    setIsModalVisibleConfig(false);
-    setConfigBarOpen(false);
-  };
-  
-  const handleCloseModalAdd = () => {
-    setIsModalVisibleAdd(false);
-    setAddBarOpen(false);
-  }
 
   const handleOpenDetalhes = (item) => {
     setSelectedItem(item);
     setIsDetalhesVisible(true);
-  }
+  };
 
   const handleCloseDetalhes = () => {
     setSelectedItem(null);
     setIsDetalhesVisible(false);
-  }
+  };
+
+  const getUniqueDevices = (items) => {
+    const unique = {};
+    items.forEach(item => {
+      if (!unique[item.id_dispositivo]) {
+        unique[item.id_dispositivo] = item;
+      }
+    });
+    return Object.values(unique);
+  };
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const params = {
+        TableName: 'reporte'
+      };
+
+      docClient.scan(params, function(err, data) {
+        if (err) {
+          console.log("Erro", err);
+        } else {
+          console.log("Dados recebidos:", data);
+          const uniqueDeviceIds = getUniqueDevices(data.Items);
+          setData(uniqueDeviceIds);
+        }
+      });
+    };
+
+    fetchData();
+    const interval = setInterval(fetchData, 10000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   let theme = lightTheme;
-
-  const data = [
-    { id: 1, equipamento: "Equipamento 1", x: 10, y: 20, z: 30, status: true },
-  ]
-
 
   return (
     <>
@@ -60,26 +78,12 @@ export function Main() {
         <StatusBar />
         <HeadBar theme={theme} toggleConfigBar={toggleConfigBar} toggleAddBar={toggleAddBar} />
         <SwipeList theme={theme} data={data} onOpenDetalhes={handleOpenDetalhes} />
-        <Modal animationType="fade" transparent={true} visible={isModalVisibleConfig} onRequestClose={handleCloseModalConfig}>
-          <TouchableWithoutFeedback onPress={handleCloseModalConfig}>
-            <View style={theme.modalContainer}>
-              {configBarOpen && <ConfigBar theme={theme} />}
-            </View>
-          </TouchableWithoutFeedback>
-        </Modal>
-        <Modal animationType="fade" transparent={true} visible={isModalVisibleAdd} onRequestClose={handleCloseModalAdd}>
-          <TouchableWithoutFeedback onPress={handleCloseModalAdd}>
-            <View style={theme.modalContainer}>
-              {addBarOpen && <AddBar toggleAddBar={toggleAddBar} theme={theme} />}
-            </View>
-          </TouchableWithoutFeedback>
-        </Modal>
         <Modal animationType="fade" visible={isDetalhesVisible} onRequestClose={handleCloseDetalhes}>
+          <View>
             <View>
-              <View>
-                {selectedItem && <DetalhesPage item={selectedItem} onClose={handleCloseDetalhes} theme={theme} />}
-              </View>
+              {selectedItem && <DetalhesPage item={selectedItem} onClose={handleCloseDetalhes} theme={theme} />}
             </View>
+          </View>
         </Modal>
       </SafeAreaView>
     </>
