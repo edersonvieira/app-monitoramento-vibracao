@@ -2,11 +2,8 @@
   "expo": {
     "extra": {
       "eas": {
-        "projectId": "61b3c93d-9a51-4b52-b361-0660ae865399"
+        "projectId": "4dcf6da0-8fdb-43d5-9189-ab5659f8c3bc"
       }
-    },
-    "android": {
-      "package": "com.dersooooo.appmonitoramentovibracao"
     }
   }
 }
