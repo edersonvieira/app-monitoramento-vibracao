@@ -2,6 +2,11 @@
   "expo": {
     "name": "app-monitoramento-vibracao",
     "slug": "app-monitoramento-vibracao",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "extra": {
+      "eas": {
+        "projectId": "2cb9876d-9a04-48dc-9f28-5b0273016095"
+      }
+    }
   }
 }
